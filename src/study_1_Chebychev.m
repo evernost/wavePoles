@@ -24,8 +24,8 @@ clc
 % -----------------------------------------------------------------------------
 % SETTINGS
 % -----------------------------------------------------------------------------
-nTerms = 10;
-r = 0.5;      % PWM ratio
+nTerms = 4;
+r = 0.9;      % PWM ratio
 
 
 % -----------------------------------------------------------------------------
@@ -54,15 +54,20 @@ end
 % Build the weights for sin() and cos()
 n = (1:nTerms)';
 s = ones(nTerms,1); s(2:2:end) = -1;
-a = -s.*sin(2*pi*n*r)./(n*pi*sqrt(r*(1-r)));
-b = -s.*(1 - cos(2*pi*n*r))./(n*pi*sqrt(r*(1-r)));
+%a = -s.*sin(2*pi*n*r)./(n*pi*sqrt(r*(1-r)));
+%b = -s.*(1 - cos(2*pi*n*r))./(n*pi*sqrt(r*(1-r)));
+v = sqrt(3); u = -sqrt(3);
+a = s.*sqrt(3).*(cos(2*pi*n*r) - 1)./(n.*n*pi*pi*r*(1-r));
+b = s.*sqrt(3).*sin(2*pi*n*r)./(n.*n*pi*pi*r*(1-r));
 
-pCos = ([0; a]).' * T;
-pSin = ([b; 0]).' * U;
-    
+pCos = ([0; a]).' * T; pCos = fliplr(pCos);
+pSin = ([b; 0]).' * U; pSin = fliplr(pSin);
+
+% Apply the distorsion polynomial
 x = linspace(-1.02, 1.02, 1000);
 xCos = cos(2*pi*x);
 xSin = sin(2*pi*x);
+y = polyval(pCos, xCos) + xSin.*polyval(pSin, xCos);
 
 % -----------------------------------------------------------------------------
 % PLOTS: TIME SERIES + ZEROS REPRESENTATION
@@ -70,22 +75,21 @@ xSin = sin(2*pi*x);
 
 % Plot the time series (square wave in time)
 figure
-y = polyval(fliplr(pCos), xCos) + xSin.*polyval(fliplr(pSin), xCos);
 plot(x,y)
 xlim([-0.75, 0.75])
 grid minor
 
 % Alternate representation of the polynomials: zeros plot
 figure
-rCos = roots(fliplr(pCos));
-rSin = roots(fliplr(pSin));
+rCos = roots(pCos);
+rSin = roots(pSin);
 plot(real(rCos(2:end)), imag(rCos(2:end)), '+', real(rSin(2:end)), imag(rSin(2:end)), '+')
 legend('cos', 'sin')
 xlim([-1.3, 1.3])
 ylim([-0.5, 0.5])
 grid on
 title(sprintf('r = %0.3f', r))
-
+axis equal;
 
 
 
